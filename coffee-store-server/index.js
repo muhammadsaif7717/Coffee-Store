@@ -28,9 +28,11 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+        // await client.connect();  //comment this line before deploy in varcel
 
+        //collections
         const coffeeCollection = client.db("coffeeDB").collection("coffee");
+        const userCollection = client.db("coffeeDB").collection("users");
 
 
         //Post coffee
@@ -86,9 +88,54 @@ async function run() {
         })
 
 
+        //user related API's
+        app.post('/users', async (req, res) => {
+            const user = req.body;
+            console.log(user)
+            const result = await userCollection.insertOne(user)
+            res.send(result)
+        })
+
+        //get users
+        app.get('/users', async (req, res) => {
+            const cursor = userCollection.find();
+            const result = await cursor.toArray();
+            res.send(result)
+        })
+
+        //get specified user
+        app.get('/users/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await userCollection.findOne(query)
+            res.send(result)
+        })
+
+        // update specific user
+        app.patch('/users', async (req, res) => {
+            const user = req.body;
+            const filter={email: user.email };
+            const updatedUser={
+                $set:{
+                    lastLogInTime: user.lastLogInTime
+                }
+            }
+          const result =await userCollection.updateOne(filter,updatedUser)
+          res.send(result)
+        })
+
+        //delete specified user
+        app.delete('/users/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await userCollection.deleteOne(query)
+            res.send(result)
+        })
+
+
 
         // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
+        // await client.db("admin").command({ ping: 1 });  //comment this line before deploy in varcel
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
